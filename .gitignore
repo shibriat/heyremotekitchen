@@ -1,0 +1,38 @@
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Django specific
+*.log
+*.pot
+*.pyc
+*.sqlite3
+*.env
+db.sqlite3
+media/
+staticfiles/
+
+# Environment variables
+.env
+venv/
+env/
+
+# JetBrains IDEs (e.g., PyCharm)
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Node.js
+node_modules/
+
+# Migrations
+*/migrations/*
+
+# Ignore system files
+Thumbs.db
