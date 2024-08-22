@@ -1,0 +1,25 @@
+{% load static %}
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <!-- Sidebar Menu -->
+    <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+            <!-- Home Link -->
+            <li class="nav-item">
+                <a href="#" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                    <i class="nav-icon fas fa-home"></i>
+                    <p>Home</p>
+                </a>
+            </li>
+            <!-- Settings Link -->
+            <li class="nav-item">
+                <a href="#" class="nav-link {% if request.path == '/settings/' %}active{% endif %}">
+                    <i class="nav-icon fas fa-cogs"></i>
+                    <p>Settings</p>
+                </a>
+            </li>
+            <!-- Add more links as needed -->
+        </ul>
+    </nav>
+</div>
