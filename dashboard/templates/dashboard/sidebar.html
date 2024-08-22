@@ -5,21 +5,26 @@
     <!-- Sidebar Menu -->
     <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-            <!-- Home Link -->
+
+            <!-- Home -->
             <li class="nav-item">
-                <a href="#" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
                     <i class="nav-icon fas fa-home"></i>
                     <p>Home</p>
                 </a>
             </li>
-            <!-- Settings Link -->
+
+            <!-- Restaurants -->
             <li class="nav-item">
-                <a href="#" class="nav-link {% if request.path == '/settings/' %}active{% endif %}">
-                    <i class="nav-icon fas fa-cogs"></i>
-                    <p>Settings</p>
+                <a href="{% url 'restaurant_list' %}"
+                    class="nav-link {% if request.path == '/restaurants/' %}active{% endif %}">
+                    <i class="nav-icon fas fa-store"></i>
+                    <p>Restaurants</p>
                 </a>
             </li>
-            <!-- Add more links as needed -->
+
         </ul>
     </nav>
+    <!-- /.sidebar-menu -->
 </div>
+<!-- /.sidebar -->

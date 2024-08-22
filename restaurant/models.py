@@ -19,10 +19,29 @@ class Branch(models.Model):
     def __str__(self):
         return f"{self.branch_name} - {self.restaurant.name}"
 
+class Employee(models.Model):
+    EMPLOYEE_POSITION_CHOICES = [
+        ('Manager', 'Manager'),
+        ('Chef', 'Chef'),
+        ('Waiter', 'Waiter'),
+        ('Cashier', 'Cashier'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="employees", null=True, blank=True)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="employees", null=True, blank=True)
+    position = models.CharField(max_length=50, choices=EMPLOYEE_POSITION_CHOICES)
+    date_hired = models.DateField()
+    salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.position}"
+
 class Menu(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="menus")
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

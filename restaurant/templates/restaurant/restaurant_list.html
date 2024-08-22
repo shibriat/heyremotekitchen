@@ -1,0 +1,187 @@
+{% extends "dashboard/dashboard.html" %}
+
+{% block title %}Restaurants{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-sm-12">
+        <ol class="breadcrumb float-sm-right mb-4">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active">Restaurants</li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">List of Restaurants</h3>
+        <!-- Add Restaurant Button -->
+        <button type="button" class="btn btn-primary float-right" data-toggle="modal"
+            data-target="#addRestaurantModal">Add Restaurant</button>
+    </div>
+    <div class="card-body">
+        <table id="restaurantsTable" class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for restaurant in restaurants %}
+                <tr>
+                    <td>{{ restaurant.id }}</td>
+                    <td>{{ restaurant.name }}</td>
+                    <td>{{ restaurant.description }}</td>
+                    <td>
+                        <!-- View Details Button -->
+                        <button class="btn btn-info btn-sm view-restaurant-btn" data-id="{{ restaurant.id }}"
+                            data-toggle="modal" data-target="#viewRestaurantModal">View</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No restaurants available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Restaurant Modal -->
+<div class="modal fade" id="addRestaurantModal" tabindex="-1" role="dialog" aria-labelledby="addRestaurantModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRestaurantModalLabel">Add Restaurant</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addRestaurantForm" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_name">Name:</label>
+                        <input type="text" class="form-control" id="id_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_description">Description:</label>
+                        <textarea class="form-control" id="id_description" name="description"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveRestaurantBtn">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Restaurant Modal -->
+<div class="modal fade" id="viewRestaurantModal" tabindex="-1" role="dialog" aria-labelledby="viewRestaurantModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewRestaurantModalLabel">Restaurant Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h5 id="restaurantName"></h5>
+                <p id="restaurantDescription"></p>
+                <hr>
+                <h6>Branches</h6>
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Branch Name</th>
+                            <th>Address</th>
+                            <th>Contact Number</th>
+                        </tr>
+                    </thead>
+                    <tbody id="branchesTableBody">
+                        <!-- Branch details will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(function () {
+        $('#restaurantsTable').DataTable({
+            "paging": true,
+            "lengthChange": false,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+        });
+
+        $('#saveRestaurantBtn').on('click', function () {
+            var form = $('#addRestaurantForm');
+            $.ajax({
+                url: "{% url 'restaurant_list' %}",
+                type: 'POST',
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        $('#addRestaurantModal').modal('hide');
+                        location.reload();
+                    }
+                },
+                error: function (xhr, errmsg, err) {
+                    $('#addRestaurantModal').modal('hide');
+                    console.log(xhr.responseText);
+                }
+            });
+        });
+
+        // View Restaurant Details
+        $('.view-restaurant-btn').on('click', function () {
+            var restaurantId = $(this).data('id');
+
+            $.ajax({
+                url: "{% url 'restaurant_detail' pk=0 %}".replace('0', restaurantId),
+                type: 'GET',
+                success: function (data) {
+                    $('#restaurantName').text(data.name);
+                    $('#restaurantDescription').text(data.description);
+
+                    var branchesTableBody = $('#branchesTableBody');
+                    branchesTableBody.empty();
+                    $.each(data.branches, function (index, branch) {
+                        branchesTableBody.append(
+                            '<tr>' +
+                            '<td>' + branch.id + '</td>' +
+                            '<td>' + branch.branch_name + '</td>' +
+                            '<td>' + branch.address + '</td>' +
+                            '<td>' + branch.contact_number + '</td>' +
+                            '</tr>'
+                        );
+                    });
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
