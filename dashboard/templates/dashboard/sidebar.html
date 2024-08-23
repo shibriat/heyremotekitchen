@@ -23,6 +23,24 @@
                 </a>
             </li>
 
+            <!-- Branches -->
+            <li class="nav-item">
+                <a href="{% url 'branch_list' %}"
+                    class="nav-link {% if request.path == '/restaurants/branch/' %}active{% endif %}">
+                    <i class="nav-icon fas fa-building"></i>
+                    <p>Branches</p>
+                </a>
+            </li>
+
+            <!-- Menus -->
+            <li class="nav-item">
+                <a href="{% url 'menu_list' %}"
+                    class="nav-link {% if request.path == '/restaurants/menus/' %}active{% endif %}">
+                    <i class="nav-icon fas fa-utensils"></i>
+                    <p>Menus</p>
+                </a>
+            </li>
+
         </ul>
     </nav>
     <!-- /.sidebar-menu -->

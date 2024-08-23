@@ -1,14 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Restaurant, Branch, Menu
+from .models import MenuItem, Restaurant, Branch, Menu
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from .models import Restaurant
-from .forms import RestaurantForm
+from .forms import RestaurantForm, BranchForm
+from django.views.decorators.http import require_POST
 
 
 @login_required
 def restaurant_list(request):
-    # Check if the user has permission to add a new restaurant
     if request.method == 'POST':
         if not request.user.profile.can_add_restaurant:
             return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
@@ -20,17 +19,16 @@ def restaurant_list(request):
             restaurant.owners.add(request.user)
             return JsonResponse({'success': True})
 
-    # Fetch the list of restaurants for the user
     restaurants = Restaurant.objects.filter(owners=request.user)
     return render(request, "restaurant/restaurant_list.html", {"restaurants": restaurants})
 
 
 @login_required
 def restaurant_detail(request, pk):
-    try:
-        restaurant = Restaurant.objects.get(pk=pk)
-    except Restaurant.DoesNotExist:
-        return JsonResponse({'error': 'Restaurant not found'}, status=404)
+    restaurant = get_object_or_404(Restaurant, pk=pk)
+
+    if not restaurant.owners.filter(id=request.user.id).exists():
+        return JsonResponse({'error': 'You do not have permission to view this restaurant.'}, status=403)
 
     branches = restaurant.branches.all().values(
         'id', 'branch_name', 'address', 'contact_number')
@@ -45,18 +43,83 @@ def restaurant_detail(request, pk):
 
 
 @login_required
-def branch_detail(request, pk):
-    branch = get_object_or_404(Branch, pk=pk)
-    if request.user not in branch.owners.all() and request.user not in branch.restaurant.owners.all():
-        return redirect('restaurant_list')
-    menus = branch.menus.all()
-    return render(request, "restaurant/branch_detail.html", {"branch": branch, "menus": menus})
+def get_restaurant(request):
+    restaurants = Restaurant.objects.filter(
+        owners=request.user).values('id', 'name')
+
+    return JsonResponse({'restaurants': list(restaurants)})
 
 
 @login_required
-def menu_list(request, branch_pk):
-    branch = get_object_or_404(Branch, pk=branch_pk)
-    if request.user not in branch.owners.all() and request.user not in branch.restaurant.owners.all():
-        return redirect('restaurant_list')
-    menus = branch.menus.all()
-    return render(request, "restaurant/menu_list.html", {"branch": branch, "menus": menus})
+def get_branch(request):
+    restaurant_id = request.GET.get('restaurant_id')
+    branches = []
+    if restaurant_id:
+        branches = Branch.objects.filter(restaurant_id=restaurant_id).values(
+            'id', 'branch_name', 'address', 'contact_number'
+        )
+
+    return JsonResponse({
+        'branches': list(branches)
+    })
+
+
+@login_required
+def branch_list(request):
+    return render(request, "restaurant/branch_list.html")
+
+
+@login_required
+def update_branch(request):
+    if request.method == 'POST':
+        branch_id = request.POST.get('branch_id')
+        branch_name = request.POST.get('branch_name')
+        address = request.POST.get('address')
+        contact_number = request.POST.get('contact_number')
+
+        branch = get_object_or_404(Branch, id=branch_id)
+
+        # Update the branch fields
+        branch.branch_name = branch_name
+        branch.address = address
+        branch.contact_number = contact_number
+        branch.save()
+
+        return JsonResponse({'success': True})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+@login_required
+def menu_list(request):
+    return render(request, "restaurant/menu_list.html")
+
+
+@login_required
+def get_menu(request):
+    branch_id = request.GET.get('branch_id')
+    if branch_id:
+        branch = Branch.objects.filter(
+            id=branch_id, owners=request.user).first()
+        if not branch:
+            return JsonResponse({'error': 'You do not have permission to view this branch.'}, status=403)
+
+        menus = Menu.objects.filter(branch=branch).values(
+            'id', 'name', 'description')
+        return JsonResponse({'menus': list(menus)})
+    return JsonResponse({'error': 'Branch ID not provided'}, status=400)
+
+
+@login_required
+def menu_items_list(request):
+    menu_id = request.GET.get('menu_id')
+    if menu_id:
+        menu = Menu.objects.filter(
+            id=menu_id, branch__owners=request.user).first()
+        if not menu:
+            return JsonResponse({'error': 'You do not have permission to view this menu.'}, status=403)
+
+        items = MenuItem.objects.filter(menu=menu).values(
+            'id', 'name', 'description', 'price')
+        return JsonResponse({'items': list(items)})
+    return JsonResponse({'error': 'Menu ID not provided'}, status=400)
