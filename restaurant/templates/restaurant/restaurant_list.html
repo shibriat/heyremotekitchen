@@ -95,11 +95,13 @@
                 </button>
             </div>
             <div class="modal-body">
-                <h5 id="restaurantName"></h5>
-                <p id="restaurantDescription"></p>
+                <h5 style="display: inline;">Name:</h5>
+                <h5 id="restaurantName" style="display: inline;"></h5>
+                <h5 style="margin-top: 10px;">Description:</h5>
+                <p id="restaurantDescription" style="margin: 0;"></p>
                 <hr>
                 <h6>Branches</h6>
-                <table class="table table-bordered table-striped">
+                <table id="restaurantsViewTable"  class="table table-bordered table-striped">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -134,6 +136,16 @@
             "responsive": true,
         });
 
+        $('#restaurantsViewTable').DataTable({
+            "paging": true,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+        });
+
         $('#saveRestaurantBtn').on('click', function () {
             var form = $('#addRestaurantForm');
             $.ajax({
@@ -156,14 +168,14 @@
         // View Restaurant Details
         $('.view-restaurant-btn').on('click', function () {
             var restaurantId = $(this).data('id');
-
+        
             $.ajax({
                 url: "{% url 'restaurant_detail' pk=0 %}".replace('0', restaurantId),
                 type: 'GET',
                 success: function (data) {
                     $('#restaurantName').text(data.name);
                     $('#restaurantDescription').text(data.description);
-
+        
                     var branchesTableBody = $('#branchesTableBody');
                     branchesTableBody.empty();
                     $.each(data.branches, function (index, branch) {
@@ -172,8 +184,7 @@
                             '<td>' + branch.id + '</td>' +
                             '<td>' + branch.branch_name + '</td>' +
                             '<td>' + branch.address + '</td>' +
-                            '<td>' + branch.contact_number + '</td>' +
-                            '</tr>'
+                            '<td>' + branch.contact_number + '</td>'
                         );
                     });
                 },
