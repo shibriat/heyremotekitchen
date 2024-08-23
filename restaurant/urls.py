@@ -12,5 +12,9 @@ urlpatterns = [
     path("branch/<int:branch_pk>/menus/", views.menu_list, name="menu_list"),
     path("menus/", views.menu_list, name='menu_list'),
     path("get_menu/", views.get_menu, name='get_menu'),
-    path("menu-items/", views.menu_items_list, name='menu_items_list'),
+    path('menu-items/<int:menu_id>/', views.menu_items_list, name='menu_items_list'),
+    path('update-menu-item/', views.update_menu_item, name='update_menu_item'),
+    path('menu-item/<int:menu_item_id>/delete/', views.delete_menu_item, name='delete_menu_item'),
+    path('menu-item/add/', views.add_menu_item, name='add_menu_item'),
+    path('menu/add/', views.add_menu, name='add_menu'),
 ]

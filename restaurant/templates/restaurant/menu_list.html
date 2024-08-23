@@ -1,0 +1,418 @@
+{% extends "dashboard/dashboard.html" %}
+
+{% block title %}Menu List{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-sm-12">
+        <ol class="breadcrumb float-sm-right mb-4">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active">Menu List</li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <!-- Restaurant Dropdown -->
+        <div class="form-group">
+            <label for="restaurantSelect">Select Restaurant:</label>
+            <select id="restaurantSelect" class="form-control">
+                <!-- Options will be populated via JavaScript -->
+            </select>
+        </div>
+
+        <!-- Branch Dropdown -->
+        <div class="form-group">
+            <label for="branchSelect">Select Branch:</label>
+            <select id="branchSelect" class="form-control">
+                <!-- Options will be populated via JavaScript -->
+            </select>
+        </div>
+
+        <!-- Menu Dropdown -->
+        <div class="form-group">
+            <label for="menuSelect">Select Menu:</label>
+            <div class="d-flex align-items-center">
+                <select id="menuSelect" class="form-control" style="flex: 1;">
+                    <!-- Options will be populated via JavaScript -->
+                </select>
+                <button type="button" class="btn btn-success ml-2" id="openAddMenuModal">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Button to open the Add Menu Item Modal -->
+        <div class="d-flex justify-content-end" style="margin-bottom: 10px;">
+            <button type="button" class="btn btn-primary" id="openAddMenuItemModal">Add Menu Item</button>
+        </div>
+        <table id="menuItemsTable" class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Menu items data will be inserted here via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit Menu Item Modal -->
+<div class="modal fade" id="editMenuItemModal" tabindex="-1" role="dialog" aria-labelledby="editMenuItemModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editMenuItemModalLabel">Edit Menu Item</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editMenuItemForm">
+                    <div class="form-group">
+                        {% csrf_token %}
+                        <label for="menuItemName">Name</label>
+                        <input type="text" class="form-control" id="menuItemName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuItemDescription">Description</label>
+                        <textarea class="form-control" id="menuItemDescription" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuItemPrice">Price</label>
+                        <input type="number" class="form-control" id="menuItemPrice" name="price" step="0.01" required>
+                    </div>
+                    <input type="hidden" id="menuItemId" name="id">
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Menu Item Modal -->
+<div class="modal fade" id="addMenuItemModal" tabindex="-1" role="dialog" aria-labelledby="addMenuItemModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMenuItemModalLabel">Add Menu Item</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addMenuItemForm">
+                    <div class="form-group">
+                        {% csrf_token %}
+                        <label for="menuItemName">Name</label>
+                        <input type="text" class="form-control" id="menuItemName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuItemDescription">Description</label>
+                        <textarea class="form-control" id="menuItemDescription" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuItemPrice">Price</label>
+                        <input type="number" class="form-control" id="menuItemPrice" name="price" step="0.01" required>
+                    </div>
+                    <input type="hidden" id="menuId" name="menu_id">
+                    <button type="submit" class="btn btn-primary">Add Menu Item</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Menu Modal -->
+<div class="modal fade" id="addMenuModal" tabindex="-1" aria-labelledby="addMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMenuModalLabel">Add Menu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMenuForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="menuName">Name</label>
+                        <input type="text" class="form-control" id="menuName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuDescription">Description</label>
+                        <textarea class="form-control" id="menuDescription" name="description"></textarea>
+                    </div>
+                    <input type="hidden" id="branchId" name="branch_id">
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function () {
+
+        var menuId = null
+        var branchId = null
+
+        function loadRestaurants() {
+            $.ajax({
+                url: "{% url 'get_restaurant' %}",
+                type: 'GET',
+                success: function (data) {
+                    var restaurantSelect = $('#restaurantSelect');
+                    restaurantSelect.empty();
+                    restaurantSelect.append('<option value="">Select Restaurant</option>');
+                    $.each(data.restaurants, function (index, restaurant) {
+                        restaurantSelect.append(
+                            '<option value="' + restaurant.id + '">' + restaurant.name + '</option>'
+                        );
+                    });
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+
+        function loadBranches(restaurantId) {
+            $.ajax({
+                url: "{% url 'get_branch' %}",
+                type: 'GET',
+                data: { restaurant_id: restaurantId },
+                success: function (data) {
+                    var branchSelect = $('#branchSelect');
+                    branchSelect.empty();
+                    branchSelect.append('<option value="">Select Branch</option>');
+                    $.each(data.branches, function (index, branch) {
+                        branchSelect.append(
+                            '<option value="' + branch.id + '">' + branch.branch_name + '</option>'
+                        );
+                    });
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+
+        function loadMenus(branchId) {
+            $.ajax({
+                url: "{% url 'get_menu' %}",
+                type: 'GET',
+                data: { branch_id: branchId },
+                success: function (data) {
+                    var menuSelect = $('#menuSelect');
+                    menuSelect.empty();
+                    menuSelect.append('<option value="">Select Menu</option>');
+                    $.each(data.menus, function (index, menu) {
+                        menuSelect.append(
+                            '<option value="' + menu.id + '">' + menu.name + '</option>'
+                        );
+                    });
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+
+        function loadMenuItems(menuId) {
+            $.ajax({
+                url: "{% url 'menu_items_list' menu_id='0000' %}".replace('0000', menuId),
+                type: 'GET',
+                success: function (data) {
+                    var menuItemsTable = $('#menuItemsTable').DataTable({
+                        "paging": true,
+                        "lengthChange": false,
+                        "searching": true,
+                        "ordering": true,
+                        "info": true,
+                        "autoWidth": false,
+                        "responsive": true,
+                        "destroy": true
+                    });
+
+                    menuItemsTable.clear().draw();
+                    $.each(data.menu_items, function (index, item) {
+                        menuItemsTable.row.add([
+                            item.id,
+                            item.name,
+                            item.description || 'N/A',
+                            item.price,
+                            '<button type="button" class="btn btn-warning btn-sm edit-btn" data-id="' + item.id + '">Edit</button> ' +
+                            '<button type="button" class="btn btn-danger btn-sm delete-btn" data-id="' + item.id + '">Delete</button>'
+                        ]).draw(false);
+                    });
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+
+        $('#menuItemsTable').on('click', '.edit-btn', function () {
+            var rowData = $(this).closest('tr').find('td');
+            var menuItemId = rowData.eq(0).text();
+            var menuItemName = rowData.eq(1).text();
+            var menuItemDescription = rowData.eq(2).text();
+            var menuItemPrice = rowData.eq(3).text();
+
+            $('#menuItemId').val(menuItemId);
+            $('#menuItemName').val(menuItemName);
+            $('#menuItemDescription').val(menuItemDescription);
+            $('#menuItemPrice').val(menuItemPrice);
+
+            $('#editMenuItemModal').modal('show');
+        });
+
+        $('#editMenuItemForm').on('submit', function (e) {
+            e.preventDefault();
+
+            var formData = $(this).serialize();
+
+            $.ajax({
+                url: "{% url 'update_menu_item' %}",
+                type: 'POST',
+                data: formData,
+                success: function (data) {
+                    $('#editMenuItemModal').modal('hide');
+                    loadMenuItems(menuId);
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        });
+
+        $('#restaurantSelect').on('change', function () {
+            var restaurantId = $(this).val();
+            if (restaurantId) {
+                loadBranches(restaurantId);
+            } else {
+                $('#branchSelect').empty().append('<option value="">Select Branch</option>');
+                $('#menuSelect').empty().append('<option value="">Select Menu</option>');
+                $('#menuItemsTable').DataTable().clear().draw();
+            }
+        });
+
+        $('#branchSelect').on('change', function () {
+            branchId = $(this).val();
+            if (branchId) {
+                loadMenus(branchId);
+            } else {
+                $('#menuSelect').empty().append('<option value="">Select Menu</option>');
+                $('#menuItemsTable').DataTable().clear().draw();
+            }
+        });
+
+        $('#menuSelect').on('change', function () {
+            menuId = $(this).val();
+            if (menuId) {
+                loadMenuItems(menuId);
+            } else {
+                $('#menuItemsTable').DataTable().clear().draw();
+            }
+        });
+
+        $(document).on('click', '.delete-btn', function () {
+            var menuItemId = $(this).data('id');
+            if (confirm('Are you sure you want to delete this menu item?')) {
+                $.ajax({
+                    url: "{% url 'delete_menu_item' menu_item_id='0000' %}".replace('0000', menuItemId),
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function () {
+                        loadMenuItems(menuId);
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+        });
+
+        $('#openAddMenuItemModal').on('click', function () {
+            if (menuId == null) {
+                alert("Select a menu")
+            } else {
+                $('#menuId').val(menuId);
+                $('#addMenuItemModal').modal('show');
+            }
+        });
+
+        $('#openAddMenuModal').on('click', function () {
+            if (branchId == null) {
+                alert("Select a branch")
+            } else {
+                $('#branchId').val(branchId);
+                $('#addMenuModal').modal('show');
+            }
+        });
+
+        $('#addMenuItemForm').on('submit', function (e) {
+            e.preventDefault();
+
+            var formData = $(this).serialize();
+
+            $.ajax({
+                url: "{% url 'add_menu_item' %}",
+                type: 'POST',
+                data: formData,
+                success: function (data) {
+                    if (data.status === 'success') {
+                        $('#addMenuItemModal').modal('hide');
+                        loadMenuItems(menuId);
+                    } else {
+                        alert('Addition failed: ' + (data.message || 'Unknown error'));
+                    }
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        });
+
+        $('#addMenuForm').on('submit', function (e) {
+            e.preventDefault();
+
+            var formData = $(this).serialize();
+
+            $.ajax({
+                url: "{% url 'add_menu' %}",
+                type: 'POST',
+                data: formData,
+                success: function (data) {
+                    if (data.status === 'success') {
+                        $('#addMenuModal').modal('hide');
+                        loadMenus(branchId)
+                        $('#menuItemsTable').DataTable().clear().draw();
+                    } else {
+                        alert('Addition failed: ' + (data.message || 'Unknown error'));
+                    }
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.responseText);
+                }
+            });
+        });
+        loadRestaurants();
+    });
+</script>
+{% endblock %}

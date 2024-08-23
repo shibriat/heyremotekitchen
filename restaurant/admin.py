@@ -20,7 +20,7 @@ class BranchAdmin(admin.ModelAdmin):
     filter_horizontal = ('owners',)
 
 class MenuAdmin(admin.ModelAdmin):
-    list_display = ('name', 'branch', 'description', 'created_at', 'updated_at')
+    list_display = ('name', 'branch', 'description')
     list_filter = ('branch',)
     search_fields = ('name', 'description')
     inlines = [MenuItemInline] 

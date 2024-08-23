@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .forms import RestaurantForm, BranchForm
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from django.middleware.csrf import get_token
 
 
 @login_required
@@ -111,15 +113,86 @@ def get_menu(request):
 
 
 @login_required
-def menu_items_list(request):
-    menu_id = request.GET.get('menu_id')
-    if menu_id:
-        menu = Menu.objects.filter(
-            id=menu_id, branch__owners=request.user).first()
-        if not menu:
-            return JsonResponse({'error': 'You do not have permission to view this menu.'}, status=403)
+def menu_items_list(request, menu_id):
+    try:
+        menu = Menu.objects.get(id=menu_id, branch__owners=request.user)
+    except Menu.DoesNotExist:
+        return JsonResponse({'error': 'You do not have permission to view this menu.'}, status=403)
 
-        items = MenuItem.objects.filter(menu=menu).values(
-            'id', 'name', 'description', 'price')
-        return JsonResponse({'items': list(items)})
-    return JsonResponse({'error': 'Menu ID not provided'}, status=400)
+    menu_items = MenuItem.objects.filter(menu=menu).values(
+        'id', 'name', 'description', 'price'
+    )
+    return JsonResponse({'menu_items': list(menu_items)})
+
+
+@csrf_protect
+@require_POST
+def update_menu_item(request):
+    try:
+        item_id = request.POST.get('id')
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+
+        menu_item = MenuItem.objects.get(id=item_id)
+
+        menu_item.name = name
+        menu_item.description = description
+        menu_item.price = price
+        menu_item.save()
+
+        return JsonResponse({'status': 'success'}, status=200)
+
+    except MenuItem.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Menu item not found'}, status=404)
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_protect
+@require_POST
+def delete_menu_item(request, menu_item_id):
+    try:
+        menu_item = MenuItem.objects.get(id=menu_item_id)
+        menu_item.delete()
+        return JsonResponse({'status': 'success'})
+    except MenuItem.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Menu item not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_POST
+def add_menu_item(request):
+    try:
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+        menu_id = request.POST.get('menu_id')
+
+        MenuItem.objects.create(
+            name=name, description=description, price=price, menu_id=menu_id)
+
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def add_menu(request):
+    name = request.POST.get('name')
+    description = request.POST.get('description')
+    branch_id = request.POST.get('branch_id')
+
+    if not name or not branch_id:
+        return JsonResponse({'status': 'error', 'message': 'Missing required fields'}, status=400)
+
+    try:
+        branch = Branch.objects.get(id=branch_id)
+        menu = Menu.objects.create(
+            branch=branch, name=name, description=description)
+        return JsonResponse({'status': 'success', 'menu_id': menu.id})
+    except Branch.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Branch does not exist'}, status=404)
