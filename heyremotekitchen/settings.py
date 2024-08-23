@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "adminlte3_theme",
     "dashboard",
     "users",
+    "order",
     "restaurant",
     "django.contrib.admin",
     "django.contrib.auth",
