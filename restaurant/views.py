@@ -53,6 +53,18 @@ def get_restaurant(request):
 
 
 @login_required
+def update_restaurant(request, pk):
+    if request.method == 'POST':
+        restaurant = get_object_or_404(Restaurant, pk=pk)
+        restaurant.name = request.POST.get('name')
+        restaurant.description = request.POST.get('description')
+        restaurant.save()
+
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
+
+
+@login_required
 def get_branch(request):
     restaurant_id = request.GET.get('restaurant_id')
     branches = []
@@ -69,6 +81,27 @@ def get_branch(request):
 @login_required
 def branch_list(request):
     return render(request, "restaurant/branch_list.html")
+
+
+@login_required
+def create_branch(request):
+    if request.method == 'POST':
+        branch_name = request.POST.get('branch_name')
+        address = request.POST.get('address')
+        contact_number = request.POST.get('contact_number')
+        restaurant_id = request.POST.get('restaurant_id')
+        
+        restaurant = Restaurant.objects.get(id=restaurant_id)
+        
+        Branch.objects.create(
+            branch_name=branch_name,
+            address=address,
+            contact_number=contact_number,
+            restaurant=restaurant
+        )
+        
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'failed'}, status=400)
 
 
 @login_required

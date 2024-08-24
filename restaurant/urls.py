@@ -17,4 +17,6 @@ urlpatterns = [
     path('menu-item/<int:menu_item_id>/delete/', views.delete_menu_item, name='delete_menu_item'),
     path('menu-item/add/', views.add_menu_item, name='add_menu_item'),
     path('menu/add/', views.add_menu, name='add_menu'),
+    path('update/<int:pk>/', views.update_restaurant, name='restaurant_update'),
+    path('create-branch/', views.create_branch, name='create_branch'),
 ]
