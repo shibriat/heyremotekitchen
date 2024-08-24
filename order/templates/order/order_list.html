@@ -147,6 +147,26 @@ Order List
             </div>
         </div>
     </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal fade" id="payOrderDetails" tabindex="-1" aria-labelledby="orderDetailsLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailsLabel">Order Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Order ID:</strong> <span id="payOrderId"></span></p>
+                    <p><strong>Order Total:</strong> <span id="payOrderTotal"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="payButton" class="btn btn-primary">Pay</button>
+                </div>
+            </div>
+        </div>
+    </div>
     {% endblock %}
 
     {% block scripts %}
@@ -335,6 +355,7 @@ Order List
                                         '<td>' + order.status + '</td>' +
                                         '<td>' +
                                         '<button class="btn btn-info btn-sm view-details" data-id="' + order.id + '">View</button>' +
+                                        '<button class="btn btn-primary btn-sm pay-order" data-id="' + order.id + '" data-amount="' + order.total_price + '">Pay</button>' +
                                         '</td>' +
                                         '</tr>'
                                     );
@@ -351,6 +372,52 @@ Order List
                     $('#orderBody').empty();
                 }
             }
+
+            $('#orderTable').on('click', '.pay-order', function () {
+                var orderId = $(this).data('id');
+                var orderTotal = $(this).closest('tr').find('td').eq(3).text().replace('$', '');
+
+                $('#payOrderId').text(orderId);
+                $('#payOrderTotal').text('$' + orderTotal);
+
+                var myModal = new bootstrap.Modal(document.getElementById('payOrderDetails'));
+                myModal.show();
+            });
+
+            // Pay Button
+            $(document).on('click', '#payButton', function () {
+                var orderId = $('#orderId').text();
+                var amount = $('#orderTotal').text().replace('$', '');
+
+                $.ajax({
+                    url: "{% url 'create_payment_intent' %}",
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    data: JSON.stringify({ amount: amount * 100, order_id: orderId }),
+                    success: function (response) {
+                        var clientSecret = response.client_secret;
+                        var stripe = Stripe('{{ STRIPE_TEST_PUBLIC_KEY }}');
+
+                        stripe.confirmCardPayment(clientSecret).then(function (result) {
+                            if (result.error) {
+                                alert(result.error.message);
+                            } else {
+                                if (result.paymentIntent.status === 'succeeded') {
+                                    alert('Payment successful!');
+                                    $('#orderDetailsModal').modal('hide');
+                                }
+                            }
+                        });
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                        alert(xhr.responseText);
+                    }
+                });
+            });
 
             $('#placeOrderBtn').on('click', function () {
                 var branchId = $('#branchSelect').val();

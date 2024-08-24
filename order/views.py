@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+import stripe
+from heyremotekitchen import settings
 from restaurant.models import MenuItem
 from .models import Order, OrderItem
 from rest_framework import viewsets, generics, permissions
@@ -107,6 +109,27 @@ def create_order(request):
         except MenuItem.DoesNotExist:
             return JsonResponse({'error': 'Menu item not found'}, status=404)
 
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+# Stripe
+
+stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
+
+def create_payment_intent(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        amount = int(data['amount'])
+        
+        try:
+            intent = stripe.PaymentIntent.create(
+                amount=amount,
+                currency='usd', 
+                payment_method_types=['card'],
+                metadata={'order_id': data['order_id']},
+            )
+            return JsonResponse({'client_secret': intent.client_secret})
+        except stripe.error.StripeError as e:
+            return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 
