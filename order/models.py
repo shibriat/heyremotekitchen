@@ -29,7 +29,6 @@ class Order(models.Model):
         total = sum(Decimal(item.get_total_price())
                     for item in self.items.all())
         if self.discount > Decimal('0.00'):
-            # Use Decimal for division
             total -= total * (self.discount / Decimal('100.00'))
         self.total_price = total
         self.save()
