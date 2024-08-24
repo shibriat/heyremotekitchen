@@ -1,0 +1,232 @@
+{% extends "dashboard/dashboard.html" %}
+
+{% block title %}
+Order List
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-sm-12">
+        <ol class="breadcrumb float-sm-right mb-4">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active">Orders</li>
+        </ol>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <label for="restaurantSelect">Select Restaurant</label>
+                    <select id="restaurantSelect" class="form-control">
+                        <option value="">Select Restaurant</option>
+                        <!-- Options will be loaded via AJAX -->
+                    </select>
+                </div>
+                <div class="col-sm-3">
+                    <label for="branchSelect">Select Branch</label>
+                    <select id="branchSelect" class="form-control" disabled>
+                        <option value="">Select Branch</option>
+                        <!-- Options will be loaded via AJAX -->
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-12">
+                    <h2>Order List</h2>
+                    <table id="orderTable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>User</th>
+                                <th>Created At</th>
+                                <th>Total Price</th>
+                                <th>Discount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderBody">
+                            <!-- Orders will be loaded via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1" role="dialog" aria-labelledby="orderDetailsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailsModalLabel">Order Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="orderDetailsContent">
+                        <!-- Order details will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block scripts %}
+    <script>
+        $(document).ready(function () {
+            $('#orderTable').DataTable({
+                "paging": true,
+                "lengthChange": false,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+            });
+
+            loadRestaurants();
+
+            $('#branchSelect').prop('disabled', true);
+
+            $('#restaurantSelect').on('change', function () {
+                const restaurantId = $(this).val();
+                if (restaurantId) {
+                    loadBranches(restaurantId);
+                    $('#branchSelect').prop('disabled', false);
+                    fetchOrders();
+                } else {
+                    $('#branchSelect').empty().append('<option value="">Select Branch</option>').prop('disabled', true);
+                    $('#orderBody').empty();
+                }
+            });
+
+            $('#branchSelect').on('change', function () {
+                fetchOrders();
+            });
+
+            function loadRestaurants() {
+                $.ajax({
+                    url: "{% url 'get_restaurant' %}",
+                    type: 'GET',
+                    success: function (data) {
+                        var restaurantSelect = $('#restaurantSelect');
+                        restaurantSelect.empty();
+                        restaurantSelect.append('<option value="">Select Restaurant</option>');
+                        $.each(data.restaurants, function (index, restaurant) {
+                            restaurantSelect.append(
+                                '<option value="' + restaurant.id + '">' + restaurant.name + '</option>'
+                            );
+                        });
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+
+            function loadBranches(restaurantId) {
+                $.ajax({
+                    url: "{% url 'get_branch' %}",
+                    type: 'GET',
+                    data: { restaurant_id: restaurantId },
+                    success: function (data) {
+                        var branchSelect = $('#branchSelect');
+                        branchSelect.empty();
+                        branchSelect.append('<option value="">Select Branch</option>');
+                        $.each(data.branches, function (index, branch) {
+                            branchSelect.append(
+                                '<option value="' + branch.id + '">' + branch.branch_name + '</option>'
+                            );
+                        });
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+
+            function fetchOrders() {
+                const branchId = $('#branchSelect').val();
+
+                if (branchId) {
+                    $.ajax({
+                        url: "{% url 'get_orders' %}",
+                        type: 'GET',
+                        data: {
+                            branch: branchId
+                        },
+                        success: function (data) {
+                            var orderBody = $('#orderBody');
+                            orderBody.empty();
+                            if (data.orders.length > 0) {
+                                $.each(data.orders, function (index, order) {
+                                    orderBody.append(
+                                        '<tr>' +
+                                        '<td>' + order.id + '</td>' +
+                                        '<td>' + order.user + '</td>' +
+                                        '<td>' + order.created_at + '</td>' +
+                                        '<td>$' + order.total_price + '</td>' +
+                                        '<td>' + order.discount + '%</td>' +
+                                        '<td>' + order.status + '</td>' +
+                                        '<td>' +
+                                        '<button class="btn btn-info btn-sm view-details" data-id="' + order.id + '">View</button>' +
+                                        '</td>' +
+                                        '</tr>'
+                                    );
+                                });
+                            } else {
+                                orderBody.append('<tr><td colspan="7" class="text-center">No orders found.</td></tr>');
+                            }
+                        },
+                        error: function (xhr, errmsg, err) {
+                            console.log(xhr.responseText);
+                        }
+                    });
+                } else {
+                    $('#orderBody').empty();
+                }
+            }
+
+            $('#orderTable').on('click', '.view-details', function () {
+                var orderId = $(this).data('id');
+                fetchOrderDetails(orderId);
+            });
+
+            function fetchOrderDetails(orderId) {
+                $.ajax({
+                    url: "{% url 'order_detail' 0 %}".replace('0', orderId),
+                    type: 'GET',
+                    success: function (data) {
+                        $('#orderDetailsContent').html(
+                            '<p><strong>Order ID:</strong> ' + data.order.id + '</p>' +
+                            '<p><strong>User:</strong> ' + data.order.user + '</p>' +
+                            '<p><strong>Created At:</strong> ' + data.order.created_at + '</p>' +
+                            '<p><strong>Total Price:</strong> $' + data.order.total_price + '</p>' +
+                            '<p><strong>Discount:</strong> ' + data.order.discount + '%</p>' +
+                            '<p><strong>Status:</strong> ' + data.order.status + '</p>' +
+                            '<p><strong>Items:</strong></p>' +
+                            '<ul>' +
+                            data.order.items.map(function (item) {
+                                return '<li>' + item.quantity + ' x ' + item.menu_item + ' ($' + item.price + ' each)</li>';
+                            }).join('') +
+                            '</ul>'
+                        );
+
+                        $('#orderDetailsModal').modal('show');
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+        });
+    </script>
+    {% endblock %}

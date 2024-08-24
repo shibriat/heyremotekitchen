@@ -41,6 +41,14 @@
                 </a>
             </li>
 
+            <!-- Orders -->
+            <li class="nav-item">
+                <a href="{% url 'order_list' %}" class="nav-link {% if request.path == '/orders/' %}active{% endif %}">
+                    <i class="nav-icon fas fa-receipt"></i>
+                    <p>Orders</p>
+                </a>
+            </li>
+
         </ul>
     </nav>
     <!-- /.sidebar-menu -->
