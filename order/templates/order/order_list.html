@@ -31,6 +31,11 @@ Order List
                         <!-- Options will be loaded via AJAX -->
                     </select>
                 </div>
+                <div class="col-sm-3">
+                    <!-- New Order Button -->
+                    <br>
+                    <button type="button" class="btn btn-success" id="newOrderBtn">New Order</button>
+                </div>
             </div>
         </div>
         <div class="card-body">
@@ -77,6 +82,71 @@ Order List
             </div>
         </div>
     </div>
+
+    <!-- Order Modal -->
+    <div class="modal fade" id="orderModal" tabindex="-1" role="dialog" aria-labelledby="orderModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderModalLabel">Create New Order</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Form Elements -->
+                    <div class="form-group">
+                        <label for="menuSelect">Select Menu</label>
+                        <select class="form-control" id="menuSelect" name="menuSelect" required>
+                            <option value="">Select Menu</option>
+                            <!-- Options will be loaded via AJAX -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="menuItemSelect">Select Menu Item</label>
+                        <select class="form-control" id="menuItemSelect" name="menuItemSelect" required>
+                            <option value="">Select Menu Item</option>
+                            <!-- Options will be loaded via AJAX -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantityInput">Quantity</label>
+                        <input type="number" class="form-control" id="quantityInput" name="quantityInput" min="1"
+                            value="1" required>
+                    </div>
+
+                    <button type="button" class="btn btn-success" id="addItemBtn">Add Item</button>
+
+                    <!-- Order Items Table -->
+                    <table class="table mt-3" id="orderItemsTable">
+                        <thead>
+                            <tr>
+                                <th>Menu Item</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItemsBody">
+                            <!-- Items will be added here -->
+                        </tbody>
+                    </table>
+
+                    <!-- Total Price Display -->
+                    <div class="text-right">
+                        <strong>Total: $<span id="totalPrice">0.00</span></strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="placeOrderBtn">Place Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
     {% endblock %}
 
     {% block scripts %}
@@ -111,6 +181,93 @@ Order List
             $('#branchSelect').on('change', function () {
                 fetchOrders();
             });
+
+            $('#newOrderBtn').on('click', function () {
+                if ($('#branchSelect').val()) {
+                    $('#orderModal').modal('show');
+                } else {
+                    alert("Select a Branch First")
+                }
+            });
+
+            $('#orderModal').on('show.bs.modal', function () {
+                var branchId = $('#branchSelect').val();
+                if (branchId) {
+                    loadMenus(branchId);
+                }
+            });
+
+            $('#menuSelect').change(function () {
+                var menuId = $(this).val();
+                if (menuId) {
+                    loadMenuItems(menuId);
+                }
+            });
+
+            $('#addItemBtn').click(function () {
+                var menuItemId = $('#menuItemSelect').val();
+                var quantity = $('#quantityInput').val();
+                var menuItemText = $('#menuItemSelect option:selected').text();
+                var price = $('#menuItemSelect option:selected').data('price');
+                var totalPrice = quantity * price;
+
+                if (menuItemId && quantity > 0 && price) {
+                    $('#orderItemsBody').append(
+                        '<tr>' +
+                        '<td>' + menuItemText + '</td>' +
+                        '<td>' + quantity + '</td>' +
+                        '<td>$' + price.toFixed(2) + '</td>' +
+                        '<td>$' + totalPrice.toFixed(2) + '</td>' +
+                        '</tr>'
+                    );
+
+                    var currentTotal = parseFloat($('#totalPrice').text().replace('$', '')) || 0;
+                    $('#totalPrice').text((currentTotal + totalPrice).toFixed(2));
+                } else {
+                    alert('Please select a valid menu item and quantity.');
+                }
+            });
+
+            function loadMenus(branchId) {
+                $.ajax({
+                    url: "{% url 'get_menu' %}",
+                    type: 'GET',
+                    data: { branch_id: branchId },
+                    success: function (data) {
+                        var menuSelect = $('#menuSelect');
+                        menuSelect.empty();
+                        menuSelect.append('<option value="">Select Menu</option>');
+                        $.each(data.menus, function (index, menu) {
+                            menuSelect.append(
+                                '<option value="' + menu.id + '">' + menu.name + '</option>'
+                            );
+                        });
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+
+            function loadMenuItems(menuId) {
+                $.ajax({
+                    url: "{% url 'menu_items_list' menu_id='0000' %}".replace('0000', menuId),
+                    type: 'GET',
+                    success: function (data) {
+                        var menuItemSelect = $('#menuItemSelect');
+                        menuItemSelect.empty();
+                        menuItemSelect.append('<option value="">Select Menu Item</option>');
+                        $.each(data.menu_items, function (index, item) {
+                            menuItemSelect.append(
+                                '<option value="' + item.id + '" data-price="' + item.price + '">' + item.name + '</option>'
+                            );
+                        });
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
 
             function loadRestaurants() {
                 $.ajax({
@@ -194,6 +351,46 @@ Order List
                     $('#orderBody').empty();
                 }
             }
+
+            $('#placeOrderBtn').on('click', function () {
+                var branchId = $('#branchSelect').val();
+                var items = [];
+
+                $('#orderItemsBody tr').each(function () {
+                    var item = {
+                        menu_item: $(this).find('td').eq(0).text(),
+                        quantity: $(this).find('td').eq(1).text(),
+                        price: $(this).find('td').eq(2).text().replace('$', ''),
+                        total_price: $(this).find('td').eq(3).text().replace('$', '')
+                    };
+                    items.push(item);
+                });
+
+                var orderData = {
+                    branch_id: branchId,
+                    items: items,
+                    total_price: $('#totalPrice').text().replace('$', '')
+                };
+
+                $.ajax({
+                    url: "{% url 'create_order' %}",
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    data: JSON.stringify(orderData),
+                    success: function (response) {
+                        alert('Order placed successfully!');
+                        fetchOrders();
+                        $('#orderModal').modal('hide');
+                    },
+                    error: function (xhr, errmsg, err) {
+                        console.log(xhr.responseText);
+                        alert('Error placing order.');
+                    }
+                });
+            });
 
             $('#orderTable').on('click', '.view-details', function () {
                 var orderId = $(this).data('id');

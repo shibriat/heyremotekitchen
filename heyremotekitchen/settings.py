@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "users",
     "order",
     "restaurant",
+    "rest_framework",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -137,3 +138,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Security
 LOGIN_URL = "/admin/login/"
+
+# API
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# Stripe
+STRIPE_TEST_PUBLIC_KEY = ''
+STRIPE_TEST_SECRET_KEY = ''
