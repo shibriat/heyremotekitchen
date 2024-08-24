@@ -17,7 +17,7 @@
 
 ## Admin Panel
 
-![Dashboard](ReadMe/admin_panel.gif)
+![Dashboard](ReadMe/admin.gif)
 
 ## Installation
 
